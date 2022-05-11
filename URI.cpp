@@ -124,3 +124,60 @@ URI::URI(
 	auto uriComponents = _parseUriString( uriString );
 	std::apply( &URI::_initialize, std::tuple_cat( std::forward_as_tuple( *this ), uriComponents ) );
 }
+
+const std::string& URI::getScheme() const
+{
+	return mScheme;
+}
+
+const std::string& URI::getUserInformation() const
+{
+	return mUserInformation;
+}
+
+const std::string& URI::getHost() const
+{
+	return mHost;
+}
+
+const std::string& URI::getPort() const
+{
+	return mPort;
+}
+
+const std::string& URI::getPath() const
+{
+	return mPath;
+}
+
+const std::string& URI::getQuery() const
+{
+	return mQuery;
+}
+
+const std::string& URI::getFragment() const
+{
+	return mFragment;
+}
+
+URI& URI::operator=(
+	URI&& other )
+{
+	if ( this != &other )
+	{
+		_moveAssign( std::move( other ) );
+	}
+
+	return *this;
+}
+
+URI& URI::operator=(
+	const URI& other )
+{
+	if ( this != &other )
+	{
+		_copyAssign( other );
+	}
+
+	return *this;
+}
