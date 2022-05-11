@@ -33,7 +33,7 @@ private:
 	void _moveAssign(
 		URI&& other );
 
-	std::tuple<
+	static std::tuple<
 		std::string, // Scheme
 		std::string, // User Information
 		std::string, // Host
