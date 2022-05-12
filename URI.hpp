@@ -18,6 +18,9 @@ private:
 	std::string mQuery;
 	std::string mFragment;
 
+	bool mIsAbsolute;
+	bool mIsRelative;
+
 	void _copyAssign(
 		const URI& other );
 
