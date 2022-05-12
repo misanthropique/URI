@@ -11,6 +11,48 @@
 
 #include "URI.hpp"
 
+/*
+ * RFC-3986: 2.1.  Percent-Encoding
+ * pct-encoded = "%" HEXDIG HEXDIG
+ */
+static const std::string STRING_PERCENT_ENCODED_REGEX( "%[0-9a-fA-F][0-9a-fA-F]" );
+
+/*
+ * RFC-3986: 2.2.  Reserved Characters
+ * reserved    = gen-delims / sub-delims
+ * gen-delims  = ":" / "/" / "?" / "#" / "[" / "]" / "@"
+ * sub-delims  = "!" / "$" / "&" / "'" / "(" / ")"
+ *             / "*" / "+" / "," / ";" / "="
+ */
+static const std::string STRING_SUBSET_DELIMITERS_REGEX( "[!$&'()*+,;=]" );
+static const std::string STRING_GENERAL_DELIMITERS_REGEX( "[:/?#\\][@]" );
+static const std::string STRING_RESERVED_REGEX(
+	"(" + STRING_GENERAL_DELIMITERS_REGEX + "|" + STRING_SUBSET_DELIMITERS_REGEX + ")" );
+
+/*
+ * RFC-3986: 2.3.  Unreserved Characters
+ * unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
+ */
+static const std::string STRING_UNRESERVED_REGEX( "[A-Za-z0-9._~-]" );
+
+/*
+ * RFC-3986: 3.1.  Scheme
+ * scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+ */
+static const std::string STRING_URI_SCHEME_REGEX( "[a-zA-Z][a-zA-Z0-9+.-]" );
+
+/*
+ * RFC-3986: 3.2.1.  User Information
+ * userinfo    = *( unreserved / pct-encoded / sub-delims / ":" )
+ */
+static const std::string STRING_URI_USER_INFORMATION_REGEX(
+	"(" + STRING_UNRESERVED_REGEX +
+	"|" + STRING_PERCENT_ENCODED_REGEX +
+	"|" + STRING_SUBSET_DELIMITERS_REGEX + "|:)*" );
+
+static const std::regex REGEX_URI_SCHEME( "^" + STRING_URI_SCHEME_REGEX + ":?$" );
+static const std::regex REGEX_URI_USER_INFORMATION( "^" + STRING_URI_USER_INFORMATION_REGEX + "@?$" );
+
 /**
  * RFC-3986 in Appendix B. Parsing a URI Reference with a Regular Expression
  * defines a regular expression for parsing a 5 part URI, however the authority
@@ -48,8 +90,36 @@ void URI::_initialize(
 	mQuery.clear();
 	mFragment.clear();
 
-	mScheme = schemeString;
-	mUserInformation = userInformationString;
+	mIsAbsolute = false;
+	mIsRelative = true;
+
+	if ( schemeString.empty() )
+	{
+		mIsRelative = true;
+	}
+	else
+	{
+		if ( not std::regex_match( schemeString, REGEX_URI_SCHEME ) )
+		{
+			throw std::invalid_argument( "Invalid scheme" );
+		}
+
+		mScheme = schemeString;
+	}
+
+	if ( userInformationString.empty() )
+	{
+	}
+	else
+	{
+		if ( not std::regex_match( userInformationString, REGEX_URI_USER_INFORMATION ) )
+		{
+			throw std::invalid_argument( "Invalid user information" );
+		}
+
+		mUserInformation = userInformationString;
+	}
+
 	mHost = hostString;
 	mPort = portString;
 	mPath = pathString;
