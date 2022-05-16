@@ -82,6 +82,8 @@ void URI::_initialize(
 	const std::string& queryString,
 	const std::string& fragmentString )
 {
+	bool hasAuthority = false;
+
 	mScheme.clear();
 	mUserInformation.clear();
 	mHost.clear();
@@ -90,14 +92,12 @@ void URI::_initialize(
 	mQuery.clear();
 	mFragment.clear();
 
+	// An empty URI is a valid relative-URI
 	mIsAbsolute = false;
 	mIsRelative = true;
 
-	if ( schemeString.empty() )
-	{
-		mIsRelative = true;
-	}
-	else
+	// Scheme
+	if ( not schemeString.empty() )
 	{
 		if ( not std::regex_match( schemeString, REGEX_URI_SCHEME ) )
 		{
@@ -105,12 +105,12 @@ void URI::_initialize(
 		}
 
 		mScheme = schemeString;
+		mIsRelative = false;
+		mIsAbsolute = true;
 	}
 
-	if ( userInformationString.empty() )
-	{
-	}
-	else
+	// User information
+	if ( not userInformationString.empty() )
 	{
 		if ( not std::regex_match( userInformationString, REGEX_URI_USER_INFORMATION ) )
 		{
@@ -118,13 +118,81 @@ void URI::_initialize(
 		}
 
 		mUserInformation = userInformationString;
+		hasAuthority = true;
 	}
 
-	mHost = hostString;
-	mPort = portString;
-	mPath = pathString;
-	mQuery = queryString;
-	mFragment = fragmentString;
+	// Host
+	if ( hostString.empty() )
+	{
+		if ( hasAuthority )
+		{
+			throw std::invalid_argument( "User information set without a host" );
+		}
+	}
+	else
+	{
+		if ( not std::regex_match( hostString, REGEX_URI_HOST ) )
+		{
+			throw std::invalid_argument( "Invalid host" );
+		}
+
+		mHost = hostString;
+	}
+
+	// Port
+	if ( portString.empty() and hasAuthority )
+	{
+		// Get the default port for the scheme if set.
+	}
+	else
+	{
+		if ( not std::regex_match( portString, REGEX_URI_PORT ) )
+		{
+			throw std::invalid_argument( "Invalid port" );
+		}
+
+		if ( not hasAuthority )
+		{
+			throw std::invalid_argument( "No host defined for port" );
+		}
+
+		mPort = portString;
+	}
+
+	// Path
+	if ( not pathString.empty() )
+	{
+		if ( not std::regex_match( pathString, REGEX_URI_PATH ) )
+		{
+			throw std::invalid_argument( "Invalid path" );
+		}
+
+		mPath = pathString;
+	}
+
+	// Query
+	if ( not queryString )
+	{
+		if ( not std::regex_match( queryString. REGEX_URI_QUERY ) )
+		{
+			throw std::invalid_argument( "Invalid query" );
+		}
+
+		mQuery = queryString;
+	}
+
+	// Fragment
+	if ( not fragmentString.empty() )
+	{
+		if ( not std::regex_match( fragmentString, REGEX_URI_FRAGMENT ) )
+		{
+			throw std::invalid_argument( "Invalid fragment" );
+		}
+
+		mFragment = fragmentString;
+		mIsAbsolute = false;
+		mIsRelative = false;
+	}
 }
 
 void URI::_moveAssign(
