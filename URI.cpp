@@ -63,6 +63,37 @@ static const std::string STRING_URI_PORT_REGEX(
 	"([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])" );
 //        1-9999,         10000-59999,  60000-64999,   65000-65499,    65500-65529,  65530-65535
 
+/*
+ * RFC-3986: 3.3.  Path
+ * path          = path-abempty    ; begins with "/" or is empty
+ *               / path-absolute   ; begins with "/" but not "//"
+ *               / path-noscheme   ; begins with a non-colon segment
+ *               / path-rootless   ; begins with a segment
+ *               / path-empty      ; zero characters
+ * path-abempty  = *( "/" segment )
+ * path-absolute = "/" [ segment-nz *( "/" segment ) ]
+ * path-noscheme = segment-nz-nc *( "/" segment )
+ * path-rootless = segment-nz *( "/" segment )
+ * path-empty    = 0<pchar>
+ * segment       = *pchar
+ * segment-nz    = 1*pchar
+ * segment-nz-nc = 1*( unreserved / pct-encoded / sub-delims / "@" )
+ *               ; non-zero-length segment without any colon ":"
+ * pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+ */
+static const std::string STRING_PATH_CHARACTER_REGEX(
+	"(" + STRING_UNRESERVED_REGEX +
+	"|" + STRING_PERCENT_ENCODED_REGEX +
+	"|" + STRING_SUBSET_DELIMITERS_REGEX +
+	"|:|@)" );
+
+/*
+ * RFC-3986: 3.4.  Query
+ * query       = *( pchar / "/" / "?" )
+ */
+static const std::string STRING_URI_QUERY_REGEX(
+	"(" + STRING_PATH_CHARACTER_REGEX + "|/|\\?)" );
+
 static const std::regex REGEX_URI_SCHEME( "^" + STRING_URI_SCHEME_REGEX + ":?$" );
 static const std::regex REGEX_URI_USER_INFORMATION( "^" + STRING_URI_USER_INFORMATION_REGEX + "@?$" );
 static const std::regex REGEX_URI_PORT( "^:?" + STRING_URI_PORT_REGEX + "$");
