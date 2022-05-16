@@ -50,8 +50,22 @@ static const std::string STRING_URI_USER_INFORMATION_REGEX(
 	"|" + STRING_PERCENT_ENCODED_REGEX +
 	"|" + STRING_SUBSET_DELIMITERS_REGEX + "|:)*" );
 
+/*
+ * RFC-3986: 3.2.3.  Port
+ * port        = *DIGIT
+ * Although the regex defined in RFC-3986 §3.2.3 allows any string
+ * of digits, the only ports that are valid are 1-65535, so the regex defined
+ * here shall only allow 1-65535. The string of zero is a separate case
+ * that signals to the OS that the system should use the default port
+ * defined for the scheme.
+ */
+static const std::string STRING_URI_PORT_REGEX(
+	"([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])" );
+//        1-9999,         10000-59999,  60000-64999,   65000-65499,    65500-65529,  65530-65535
+
 static const std::regex REGEX_URI_SCHEME( "^" + STRING_URI_SCHEME_REGEX + ":?$" );
 static const std::regex REGEX_URI_USER_INFORMATION( "^" + STRING_URI_USER_INFORMATION_REGEX + "@?$" );
+static const std::regex REGEX_URI_PORT( "^:?" + STRING_URI_PORT_REGEX + "$");
 
 /**
  * RFC-3986 in Appendix B. Parsing a URI Reference with a Regular Expression
