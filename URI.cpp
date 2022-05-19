@@ -39,7 +39,7 @@ static const std::string STRING_UNRESERVED_REGEX( "[A-Za-z0-9._~-]" );
  * RFC-3986: 3.1.  Scheme
  * scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
  */
-static const std::string STRING_URI_SCHEME_REGEX( "[a-zA-Z][a-zA-Z0-9+.-]" );
+static const std::string STRING_URI_SCHEME_REGEX( "[a-zA-Z][a-zA-Z0-9+.-]*" );
 
 /*
  * RFC-3986: 3.2.1.  User Information
@@ -178,7 +178,7 @@ static const std::string STRING_URI_QUERY_REGEX(
  * fragment    = *( pchar / "/" / "?" )
  */
 static const std::string STRING_URI_FRAGMENT_REGEX(
-	"(" + STRING_PATH_CHARACTER_REGEX + "|/|?)*" );
+	"(" + STRING_PATH_CHARACTER_REGEX + "|/|\\?)*" );
 
 static const std::regex REGEX_URI_SCHEME( "^" + STRING_URI_SCHEME_REGEX + ":?$" );
 static const std::regex REGEX_URI_USER_INFORMATION( "^" + STRING_URI_USER_INFORMATION_REGEX + "@?$" );
@@ -275,9 +275,12 @@ void URI::_initialize(
 	}
 
 	// Port
-	if ( portString.empty() and hasAuthority )
+	if ( portString.empty() )
 	{
-		// Get the default port for the scheme if set.
+		if ( hasAuthority )
+		{
+			// Get the default port for the scheme if set.
+		}
 	}
 	else
 	{
