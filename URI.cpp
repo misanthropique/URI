@@ -114,12 +114,21 @@ static const std::string STRING_URI_PATH_REGEX(
  * query       = *( pchar / "/" / "?" )
  */
 static const std::string STRING_URI_QUERY_REGEX(
-	"(" + STRING_PATH_CHARACTER_REGEX + "|/|\\?)" );
+	"(" + STRING_PATH_CHARACTER_REGEX + "|/|\\?)*" );
+
+/*
+ * RFC-3986: 3.5.  Fragment
+ * fragment    = *( pchar / "/" / "?" )
+ */
+static const std::string STRING_URI_FRAGMENT_REGEX(
+	"(" + STRING_PATH_CHARACTER_REGEX + "|/|?)*" );
 
 static const std::regex REGEX_URI_SCHEME( "^" + STRING_URI_SCHEME_REGEX + ":?$" );
 static const std::regex REGEX_URI_USER_INFORMATION( "^" + STRING_URI_USER_INFORMATION_REGEX + "@?$" );
 static const std::regex REGEX_URI_PORT( "^:?" + STRING_URI_PORT_REGEX + "$" );
 static const std::regex REGEX_URI_PATH( "^" + STRING_URI_PATH_REGEX + "$" );
+static const std::regex REGEX_URI_QUERY( "^\\??" + STRING_URI_QUERY_REGEX + "$" );
+static const std::regex REGEX_URI_FRAGMENT( "^#?" + STRING_URI_FRAGMENT_REGEX + "$" );
 
 /**
  * RFC-3986 in Appendix B. Parsing a URI Reference with a Regular Expression
