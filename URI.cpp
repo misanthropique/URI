@@ -51,6 +51,63 @@ static const std::string STRING_URI_USER_INFORMATION_REGEX(
 	"|" + STRING_SUBSET_DELIMITERS_REGEX + "|:)*" );
 
 /*
+ * RFC-3986: 3.2.2.  Host
+ * host        = IP-literal / IPv4address / reg-name
+ * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
+ * IPvFuture  = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
+ * IPv6address =                            6( h16 ":" ) ls32
+ *             /                       "::" 5( h16 ":" ) ls32
+ *             / [               h16 ] "::" 4( h16 ":" ) ls32
+ *             / [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+ *             / [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+ *             / [ *3( h16 ":" ) h16 ] "::"    h16 ":"   ls32
+ *             / [ *4( h16 ":" ) h16 ] "::"              ls32
+ *             / [ *5( h16 ":" ) h16 ] "::"              h16
+ *             / [ *6( h16 ":" ) h16 ] "::"
+ * ls32        = ( h16 ":" h16 ) / IPv4address
+ *             ; least-significant 32 bits of address
+ * h16         = 1*4HEXDIG
+ *             ; 16 bits of address represented in hexadecimal
+ * IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
+ * dec-octet   = DIGIT                 ; 0-9
+ *             / %x31-39 DIGIT         ; 10-99
+ *             / "1" 2DIGIT            ; 100-199
+ *             / "2" %x30-34 DIGIT     ; 200-249
+ *             / "25" %x30-35          ; 250-255
+ * reg-name    = *( unreserved / pct-encoded / sub-delims )
+ */
+static const std::string STRING_REGISTERED_NAME_REGEX(
+	"(" + STRING_UNRESERVED_REGEX +
+	"|" + STRING_PERCENT_ENCODED_REGEX +
+	"|" + STRING_SUBSET_DELIMITERS_REGEX + ")*" );
+static const std::string STRING_DECIMAL_OCTET_REGEX(
+	"([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])" );
+static const std::string STRING_IPV4_ADDRESS_REGEX(
+	STRING_DECIMAL_OCTET_REGEX + "." + STRING_DECIMAL_OCTET_REGEX +
+	"." + STRING_DECIMAL_OCTET_REGEX + "." + STRING_DECIMAL_OCTET_REGEX );
+static const std::string STRING_HEXADECIMAL_HEXTET_REGEX( "[0-9A-Fa-f]{4}" );
+static const std::string STRING_IPV6_ADDRESS_LEAST_SIGNIFICANT_32_BITS_REGEX(
+	"((" + STRING_HEXADECIMAL_HEXTET_REGEX + ":" + STRING_HEXADECIMAL_HEXTET_REGEX + ")|" + STRING_IPV4_ADDRESS_REGEX + ")" );
+static const std::string STRING_IPV6_ADDRESS_REGEX(
+	"((" + STRING_HEXADECIMAL_HEXTET_REGEX + ":){6}" + STRING_IPV6_ADDRESS_LEAST_SIGNIFICANT_32_BITS_REGEX +
+	"|::(" + STRING_HEXADECIMAL_HEXTET_REGEX + ":){5}" + STRING_IPV6_ADDRESS_LEAST_SIGNIFICANT_32_BITS_REGEX +
+	"|(" + STRING_HEXADECIMAL_HEXTET_REGEX + ")?::(" + STRING_HEXADECIMAL_HEXTET_REGEX + ":){4}" + STRING_IPV6_ADDRESS_LEAST_SIGNIFICANT_32_BITS_REGEX +
+	"|((" + STRING_HEXADECIMAL_HEXTET_REGEX + ":){0,1}" + STRING_HEXADECIMAL_HEXTET_REGEX + ")?::(" + STRING_HEXADECIMAL_HEXTET_REGEX + ":){3}" + STRING_IPV6_ADDRESS_LEAST_SIGNIFICANT_32_BITS_REGEX +
+	"|((" + STRING_HEXADECIMAL_HEXTET_REGEX + ":){0,2}" + STRING_HEXADECIMAL_HEXTET_REGEX + ")?::(" + STRING_HEXADECIMAL_HEXTET_REGEX + ":){2}" + STRING_IPV6_ADDRESS_LEAST_SIGNIFICANT_32_BITS_REGEX +
+	"|((" + STRING_HEXADECIMAL_HEXTET_REGEX + ":){0,3}" + STRING_HEXADECIMAL_HEXTET_REGEX + ")?::" + STRING_HEXADECIMAL_HEXTET_REGEX + ":" + STRING_IPV6_ADDRESS_LEAST_SIGNIFICANT_32_BITS_REGEX +
+	"|((" + STRING_HEXADECIMAL_HEXTET_REGEX + ":){0,4}" + STRING_HEXADECIMAL_HEXTET_REGEX + ")?::" + STRING_IPV6_ADDRESS_LEAST_SIGNIFICANT_32_BITS_REGEX +
+	"|((" + STRING_HEXADECIMAL_HEXTET_REGEX + ":){0,5}" + STRING_HEXADECIMAL_HEXTET_REGEX + ")?::" + STRING_HEXADECIMAL_HEXTET_REGEX +
+	"|((" + STRING_HEXADECIMAL_HEXTET_REGEX + ":){0,6}" + STRING_HEXADECIMAL_HEXTET_REGEX + ")?::)" );
+static const std::string STRING_IPVFUTURE_REGEX(
+	"v[0-9A-Fa-f]+\\.(" + STRING_UNRESERVED_REGEX + "|" + STRING_SUBSET_DELIMITERS_REGEX + "|:)+" );
+static const std::string STRING_IPLITERAL_REGEX(
+	"\\[(" + STRING_IPV6_ADDRESS_REGEX + "|" + STRING_IPVFUTURE_REGEX + ")\\]");
+static const std::string STRING_URI_HOST_REGEX(
+	"(" + STRING_IPLITERAL_REGEX +
+	"|" + STRING_IPV4_ADDRESS_REGEX +
+	"|" + STRING_REGISTERED_NAME_REGEX + ")" );
+
+/*
  * RFC-3986: 3.2.3.  Port
  * port        = *DIGIT
  * Although the regex defined in RFC-3986 §3.2.3 allows any string
@@ -125,6 +182,7 @@ static const std::string STRING_URI_FRAGMENT_REGEX(
 
 static const std::regex REGEX_URI_SCHEME( "^" + STRING_URI_SCHEME_REGEX + ":?$" );
 static const std::regex REGEX_URI_USER_INFORMATION( "^" + STRING_URI_USER_INFORMATION_REGEX + "@?$" );
+static const std::regex REGEX_URI_HOST( "^" + STRING_URI_HOST_REGEX + "$" );
 static const std::regex REGEX_URI_PORT( "^:?" + STRING_URI_PORT_REGEX + "$" );
 static const std::regex REGEX_URI_PATH( "^" + STRING_URI_PATH_REGEX + "$" );
 static const std::regex REGEX_URI_QUERY( "^\\??" + STRING_URI_QUERY_REGEX + "$" );
