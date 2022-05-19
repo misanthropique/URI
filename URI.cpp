@@ -86,6 +86,28 @@ static const std::string STRING_PATH_CHARACTER_REGEX(
 	"|" + STRING_PERCENT_ENCODED_REGEX +
 	"|" + STRING_SUBSET_DELIMITERS_REGEX +
 	"|:|@)" );
+static const std::string STRING_SEGMENT_NON_ZERO_LENGTH_NO_COLON_REGEX(
+	"(" + STRING_UNRESERVED_REGEX +
+	"|" + STRING_PERCENT_ENCODED_REGEX +
+	"|" + STRING_SUBSET_DELIMITERS_REGEX +
+	"|@)+" );
+static const std::string STRING_SEGMENT_NON_ZERO_LENGTH_REGEX( STRING_PATH_CHARACTER_REGEX + "+" );
+static const std::string STRING_SEGMENT_REGEX( STRING_PATH_CHARACTER_REGEX + "*" );
+static const std::string STRING_PATH_EMPTY_REGEX( STRING_PATH_CHARACTER_REGEX + "{0}" );
+static const std::string STRING_PATH_ROOTLESS_REGEX(
+	STRING_SEGMENT_NON_ZERO_LENGTH_REGEX + "(/" + STRING_SEGMENT_REGEX + ")*" );
+static const std::string STRING_PATH_NO_SCHEME_REGEX(
+	STRING_SEGMENT_NON_ZERO_LENGTH_NO_COLON_REGEX + "(/" + STRING_SEGMENT_REGEX + ")*" );
+static const std::string STRING_PATH_ABSOLUTE_REGEX(
+	"/(" + STRING_SEGMENT_NON_ZERO_LENGTH_REGEX + "(/" + STRING_SEGMENT_REGEX + ")*)?");
+static const std::string STRING_PATH_ABSOLUTE_OR_EMPTY_REGEX(
+	"(/" + STRING_SEGMENT_REGEX + ")*" );
+static const std::string STRING_URI_PATH_REGEX(
+	"(" + STRING_PATH_ABSOLUTE_OR_EMPTY_REGEX +
+	"|" + STRING_PATH_ABSOLUTE_REGEX +
+	"|" + STRING_PATH_NO_SCHEME_REGEX +
+	"|" + STRING_PATH_ROOTLESS_REGEX +
+	"|" + STRING_PATH_EMPTY_REGEX + ")" );
 
 /*
  * RFC-3986: 3.4.  Query
@@ -96,7 +118,8 @@ static const std::string STRING_URI_QUERY_REGEX(
 
 static const std::regex REGEX_URI_SCHEME( "^" + STRING_URI_SCHEME_REGEX + ":?$" );
 static const std::regex REGEX_URI_USER_INFORMATION( "^" + STRING_URI_USER_INFORMATION_REGEX + "@?$" );
-static const std::regex REGEX_URI_PORT( "^:?" + STRING_URI_PORT_REGEX + "$");
+static const std::regex REGEX_URI_PORT( "^:?" + STRING_URI_PORT_REGEX + "$" );
+static const std::regex REGEX_URI_PATH( "^" + STRING_URI_PATH_REGEX + "$" );
 
 /**
  * RFC-3986 in Appendix B. Parsing a URI Reference with a Regular Expression
