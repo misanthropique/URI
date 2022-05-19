@@ -306,7 +306,7 @@ void URI::_initialize(
 	}
 
 	// Query
-	if ( not queryString )
+	if ( not queryString.empty() )
 	{
 		if ( not std::regex_match( queryString. REGEX_URI_QUERY ) )
 		{
