@@ -3,6 +3,8 @@
  * Permission to use, copy, modify, and/or distribute this software, in whole
  * or part by any means, without express prior written agreement is prohibited.
  */
+#include <algorithm>
+#include <cctype>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -29,11 +31,18 @@ static const std::string STRING_GENERAL_DELIMITERS_REGEX( "[:/?#\\][@]" );
 static const std::string STRING_RESERVED_REGEX(
 	"(" + STRING_GENERAL_DELIMITERS_REGEX + "|" + STRING_SUBSET_DELIMITERS_REGEX + ")" );
 
+static const std::string STRING_RESERVED_CHARACTERS( ":/?#[]@!$&'()*+,;=" );
+
 /*
  * RFC-3986: 2.3.  Unreserved Characters
  * unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
  */
 static const std::string STRING_UNRESERVED_REGEX( "[A-Za-z0-9._~-]" );
+
+static const std::string STRING_UNRESERVED_CHARACTERS(
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ" \
+	"abcdefghijklmnopqrstuvwxyz" \
+	"0123456789-._~" );
 
 /*
  * RFC-3986: 3.1.  Scheme
@@ -196,6 +205,66 @@ static const std::regex REGEX_URI_FRAGMENT( "^#?" + STRING_URI_FRAGMENT_REGEX + 
  */
 static const std::regex REGEX_URI_PARSE( "^(([^:/?#]+):)?(//(([^@]+)@)?([^/?#:]*)(:([^/?#]+))?)?([^?#]*)(\\?([^#]*))?(#(.*))?$" );
 
+// Generator code:
+// $ awk 'BEGIN{for(i=0;i<256;i++) printf "\"%%%2.2X\",%c",i,(0==(i+1)%16)?"\n":" "}'
+static const char[ 256 ][ 4 ] ARRAY_PERCENT_ENCODED_CHARACTER_TABLE =
+{
+	"%00", "%01", "%02", "%03", "%04", "%05", "%06", "%07", "%08", "%09", "%0A", "%0B", "%0C", "%0D", "%0E", "%0F",
+	"%10", "%11", "%12", "%13", "%14", "%15", "%16", "%17", "%18", "%19", "%1A", "%1B", "%1C", "%1D", "%1E", "%1F",
+	"%20", "%21", "%22", "%23", "%24", "%25", "%26", "%27", "%28", "%29", "%2A", "%2B", "%2C", "%2D", "%2E", "%2F",
+	"%30", "%31", "%32", "%33", "%34", "%35", "%36", "%37", "%38", "%39", "%3A", "%3B", "%3C", "%3D", "%3E", "%3F",
+	"%40", "%41", "%42", "%43", "%44", "%45", "%46", "%47", "%48", "%49", "%4A", "%4B", "%4C", "%4D", "%4E", "%4F",
+	"%50", "%51", "%52", "%53", "%54", "%55", "%56", "%57", "%58", "%59", "%5A", "%5B", "%5C", "%5D", "%5E", "%5F",
+	"%60", "%61", "%62", "%63", "%64", "%65", "%66", "%67", "%68", "%69", "%6A", "%6B", "%6C", "%6D", "%6E", "%6F",
+	"%70", "%71", "%72", "%73", "%74", "%75", "%76", "%77", "%78", "%79", "%7A", "%7B", "%7C", "%7D", "%7E", "%7F",
+	"%80", "%81", "%82", "%83", "%84", "%85", "%86", "%87", "%88", "%89", "%8A", "%8B", "%8C", "%8D", "%8E", "%8F",
+	"%90", "%91", "%92", "%93", "%94", "%95", "%96", "%97", "%98", "%99", "%9A", "%9B", "%9C", "%9D", "%9E", "%9F",
+	"%A0", "%A1", "%A2", "%A3", "%A4", "%A5", "%A6", "%A7", "%A8", "%A9", "%AA", "%AB", "%AC", "%AD", "%AE", "%AF",
+	"%B0", "%B1", "%B2", "%B3", "%B4", "%B5", "%B6", "%B7", "%B8", "%B9", "%BA", "%BB", "%BC", "%BD", "%BE", "%BF",
+	"%C0", "%C1", "%C2", "%C3", "%C4", "%C5", "%C6", "%C7", "%C8", "%C9", "%CA", "%CB", "%CC", "%CD", "%CE", "%CF",
+	"%D0", "%D1", "%D2", "%D3", "%D4", "%D5", "%D6", "%D7", "%D8", "%D9", "%DA", "%DB", "%DC", "%DD", "%DE", "%DF",
+	"%E0", "%E1", "%E2", "%E3", "%E4", "%E5", "%E6", "%E7", "%E8", "%E9", "%EA", "%EB", "%EC", "%ED", "%EE", "%EF",
+	"%F0", "%F1", "%F2", "%F3", "%F4", "%F5", "%F6", "%F7", "%F8", "%F9", "%FA", "%FB", "%FC", "%FD", "%FE", "%FF"
+};
+
+static std::string _uri_percent_encode_encode(
+	const std::string& unencodeString )
+{
+	std::string encodedString;
+	for ( const auto& character : unencodedString )
+	{
+		if ( std::string::npos == STRING_UNRESERVED_CHARACTERS.find( character ) )
+		{
+			encodedString.append( ARRAY_PERCENT_ENCODED_CHARACTER_TABLE[ character ] );
+		}
+		else
+		{
+			encodedString.append( character );
+		}
+	}
+
+	return encodedString;
+}
+
+static std::string _uri_percent_encode_decode(
+	const std::string& encodedString )
+{
+	std::string unencodedString;
+	for ( size_t index( -1 ); ++index < encodedString.size(); )
+	{
+		if ( '%' == encodedString[ index ] )
+		{
+			// Check that the next 2 characters are hexadecimal
+		}
+		else
+		{
+			unencodedString.append( encodedString[ index ] );
+		}
+	}
+
+	return unencodedString;
+}
+
 void URI::_copyAssign(
 	const URI& other )
 {
@@ -239,6 +308,12 @@ void URI::_initialize(
 			throw std::invalid_argument( "Invalid scheme" );
 		}
 
+		mRawScheme = schemeString;
+		std::transform( mRawScheme.begin(), mRawScheme.end(), mRawScheme.begin(),
+			[]( unsigned char character )
+			{
+				return std::tolower( character );
+			} );
 		mScheme = schemeString;
 		mIsRelative = false;
 		mIsAbsolute = true;
@@ -249,6 +324,8 @@ void URI::_initialize(
 	{
 		if ( not std::regex_match( userInformationString, REGEX_URI_USER_INFORMATION ) )
 		{
+			// Try encoding the user information before throwing invalid_argument
+			mRawUserInformation = _uri_percent_encode_encode( userInformationString );
 			throw std::invalid_argument( "Invalid user information" );
 		}
 
@@ -268,6 +345,7 @@ void URI::_initialize(
 	{
 		if ( not std::regex_match( hostString, REGEX_URI_HOST ) )
 		{
+			
 			throw std::invalid_argument( "Invalid host" );
 		}
 
@@ -399,6 +477,11 @@ URI::URI(
 {
 	auto uriComponents = _parseUriString( uriString );
 	std::apply( &URI::_initialize, std::tuple_cat( std::forward_as_tuple( *this ), uriComponents ) );
+}
+
+const std::string& getCanonicalScheme() const
+{
+	return mRawScheme;
 }
 
 const std::string& URI::getScheme() const
