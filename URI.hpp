@@ -18,6 +18,14 @@ private:
 	std::string mQuery;
 	std::string mFragment;
 
+	std::string mRawScheme; // The canonical scheme
+	std::string mRawUserInformation;
+	std::string mRawUserInformationWithPassword;
+	std::string mRawHost;
+	std::string mRawPath;
+	std::string mRawQuery;
+	std::string mRawFragment;
+
 	bool mIsAbsolute;
 	bool mIsRelative;
 
@@ -77,6 +85,12 @@ public:
 		const std::string& uriString );
 
 	/**
+	 * Get the canonical scheme for the URI. For relative URIs, this is not defined.
+	 * @return Const reference to the canonical scheme component of the URI.
+	 */
+	const std::string& getCanonicalScheme() const;
+
+	/**
 	 * Get the scheme for the URI. For relative URIs, this is not defined.
 	 * @return Const reference to the scheme component of the URI.
 	 */
@@ -120,6 +134,39 @@ public:
 	 * @return Const reference to the fragment component of the URI.
 	 */
 	const std::string& getFragment() const;
+
+	/**
+	 * Get the encoded user information component of the URI.
+	 * @param includePassword The encoded user information should include everything
+	 *                        after, and including, the first semicolon. [default: false]
+	 * @return Const reference to the encoded user information
+	 */
+	const std::string& getRawUserInformation(
+		bool includePassword = false ) const;
+
+	/**
+	 * Get the encoded host component of the URI.
+	 * @return Const reference to the encoded host.
+	 */
+	const std::string& getRawHost() const;
+
+	/**
+	 * Get the encoded path component of the URI.
+	 * @return Const reference to the encoded path.
+	 */
+	const std::string& getRawPath() const;
+
+	/**
+	 * Get the encoded query component of the URI.
+	 * @return Const reference to the encoded query.
+	 */
+	const std::string& getRawQuery() const;
+
+	/**
+	 * Get the encoded fragment component of the URI.
+	 * @return Const reference to the encoded fragment.
+	 */
+	const std::string& getRawFragment() const;
 
 	/**
 	 * Move assignment operator.
