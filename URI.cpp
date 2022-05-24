@@ -207,7 +207,7 @@ static const std::regex REGEX_URI_PARSE( "^(([^:/?#]+):)?(//(([^@]+)@)?([^/?#:]*
 
 // Generator code:
 // $ awk 'BEGIN{for(i=0;i<256;i++) printf "\"%%%2.2X\",%c",i,(0==(i+1)%16)?"\n":" "}'
-static const char[ 256 ][ 4 ] ARRAY_PERCENT_ENCODED_CHARACTER_TABLE =
+static const char ARRAY_PERCENT_ENCODED_CHARACTER_TABLE[ 256 ][ 4 ] =
 {
 	"%00", "%01", "%02", "%03", "%04", "%05", "%06", "%07", "%08", "%09", "%0A", "%0B", "%0C", "%0D", "%0E", "%0F",
 	"%10", "%11", "%12", "%13", "%14", "%15", "%16", "%17", "%18", "%19", "%1A", "%1B", "%1C", "%1D", "%1E", "%1F",
@@ -228,7 +228,7 @@ static const char[ 256 ][ 4 ] ARRAY_PERCENT_ENCODED_CHARACTER_TABLE =
 };
 
 static std::string _uri_percent_encode_encode(
-	const std::string& unencodeString )
+	const std::string& unencodedString )
 {
 	std::string encodedString;
 	for ( const auto& character : unencodedString )
@@ -239,7 +239,7 @@ static std::string _uri_percent_encode_encode(
 		}
 		else
 		{
-			encodedString.append( character );
+			encodedString.append( 1, character );
 		}
 	}
 
@@ -258,7 +258,7 @@ static std::string _uri_percent_encode_decode(
 		}
 		else
 		{
-			unencodedString.append( encodedString[ index ] );
+			unencodedString.append( 1, encodedString[ index ] );
 		}
 	}
 
@@ -345,7 +345,6 @@ void URI::_initialize(
 	{
 		if ( not std::regex_match( hostString, REGEX_URI_HOST ) )
 		{
-			
 			throw std::invalid_argument( "Invalid host" );
 		}
 
@@ -479,7 +478,7 @@ URI::URI(
 	std::apply( &URI::_initialize, std::tuple_cat( std::forward_as_tuple( *this ), uriComponents ) );
 }
 
-const std::string& getCanonicalScheme() const
+const std::string& URI::getCanonicalScheme() const
 {
 	return mRawScheme;
 }
