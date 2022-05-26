@@ -227,7 +227,7 @@ static const char ARRAY_PERCENT_ENCODED_CHARACTER_TABLE[ 256 ][ 4 ] =
 	"%F0", "%F1", "%F2", "%F3", "%F4", "%F5", "%F6", "%F7", "%F8", "%F9", "%FA", "%FB", "%FC", "%FD", "%FE", "%FF"
 };
 
-static std::string _uri_percent_encode_encode(
+static std::string __uri_percent_encode_encode(
 	const std::string& unencodedString )
 {
 	std::string encodedString;
@@ -235,7 +235,7 @@ static std::string _uri_percent_encode_encode(
 	{
 		if ( std::string::npos == STRING_UNRESERVED_CHARACTERS.find( character ) )
 		{
-			encodedString.append( ARRAY_PERCENT_ENCODED_CHARACTER_TABLE[ character ] );
+			encodedString.append( ARRAY_PERCENT_ENCODED_CHARACTER_TABLE[ static_cast< unsigned char >( character ) ] );
 		}
 		else
 		{
@@ -246,7 +246,20 @@ static std::string _uri_percent_encode_encode(
 	return encodedString;
 }
 
-static std::string _uri_percent_encode_decode(
+// It is assumed that {@param hexadecimalCharacter} ∈ [0-9A-Fa-f]
+static inline unsigned char __hexadecimal_character_to_nibble(
+	unsigned char hexadecimalCharacter )
+{
+	return ( hexadecimalCharacter >= 'A' ) ? hexadecimalCharacter - 32 * ( hexadecimalCharacter >= 'a' ) - 'A' + 10 : hexadecimalCharacter - '0';
+}
+
+static inline unsigned char __hexadecimal_octet_to_char(
+	const char* hexadecimalPair )
+{
+	return ( __hexadecimal_character_to_nibble( hexadecimalPair[ 0 ] ) << 4 ) | __hexadecimal_character_to_nibble( hexadecimalPair[ 1 ] );
+}
+
+static std::string __uri_percent_encode_decode(
 	const std::string& encodedString )
 {
 	std::string unencodedString;
@@ -254,7 +267,17 @@ static std::string _uri_percent_encode_decode(
 	{
 		if ( '%' == encodedString[ index ] )
 		{
-			// Check that the next 2 characters are hexadecimal
+			// Check that the next 2 characters are hexadecimal.
+			// If the next 2 characters aren't hexadecimal, then it can be the
+			// responsibility of the caller to know if that substring is valid.
+			if ( ( index + 2 ) < encodedString.size() )
+			{
+				if ( std::isxdigit( encodedString[ index + 1 ] ) and std::isxdigit( encodedString[ index + 2 ] ) )
+				{
+					unencodedString.append( 1, __hexadecimal_octet_to_char( encodedString.c_str() + index + 1 ) );
+					index += 2;
+				}
+			}
 		}
 		else
 		{
@@ -275,6 +298,13 @@ void URI::_copyAssign(
 	mPath = other.mPath;
 	mQuery = other.mQuery;
 	mFragment = other.mFragment;
+	mRawScheme = other.mRawScheme;
+	mRawUserInformation = other.mRawUserInformation;
+	mRawUserInformationWithPassword = other.mRawUserInformationWithPassword;
+	mRawHost = other.mRawHost;
+	mRawPath = other.mRawPath;
+	mRawQuery = other.mRawQuery;
+	mRawFragment = other.mRawFragment;
 }
 
 void URI::_initialize(
@@ -295,6 +325,14 @@ void URI::_initialize(
 	mPath.clear();
 	mQuery.clear();
 	mFragment.clear();
+
+	mRawScheme.clear();
+	mRawUserInformation.clear();
+	mRawUserInformationWithPassword.clear();
+	mRawHost.clear();
+	mRawPath.clear();
+	mRawQuery.clear();
+	mRawFragment.clear();
 
 	// An empty URI is a valid relative-URI
 	mIsAbsolute = false;
@@ -322,15 +360,21 @@ void URI::_initialize(
 	// User information
 	if ( not userInformationString.empty() )
 	{
-		if ( not std::regex_match( userInformationString, REGEX_URI_USER_INFORMATION ) )
-		{
-			// Try encoding the user information before throwing invalid_argument
-			mRawUserInformation = _uri_percent_encode_encode( userInformationString );
-			throw std::invalid_argument( "Invalid user information" );
-		}
-
+		// TODO: Walk through the logic of when to encode/decode
+		mRawUserInformation = userInformationString;
 		mUserInformation = userInformationString;
 		hasAuthority = true;
+
+		if ( not std::regex_match( mRawUserInformation, REGEX_URI_USER_INFORMATION ) )
+		{
+			mRawUserInformation = __uri_percent_encode_encode( mRawUserInformation );
+			// Try encoding the user information before throwing invalid_argument
+			throw std::invalid_argument( "Invalid user information" );
+		}
+		else
+		{
+			mUserInformation = __uri_percent_encode_decode( mUserInformation );
+		}
 	}
 
 	// Host
@@ -343,7 +387,9 @@ void URI::_initialize(
 	}
 	else
 	{
-		if ( not std::regex_match( hostString, REGEX_URI_HOST ) )
+		mRawHost = __uri_percent_encode_encode( hostString );
+
+		if ( not std::regex_match( mRawHost, REGEX_URI_HOST ) )
 		{
 			throw std::invalid_argument( "Invalid host" );
 		}
@@ -420,6 +466,13 @@ void URI::_moveAssign(
 	mPath = std::move( other.mPath );
 	mQuery = std::move( other.mQuery );
 	mFragment = std::move( other.mFragment );
+	mRawScheme = std::move( other.mRawScheme );
+	mRawUserInformation = std::move( other.mRawUserInformation );
+	mRawUserInformationWithPassword = std::move( other.mRawUserInformationWithPassword );
+	mRawHost = std::move( other.mRawHost );
+	mRawPath = std::move( other.mRawPath );
+	mRawQuery = std::move( other.mRawQuery );
+	mRawFragment = std::move( other.mRawFragment );
 }
 
 std::tuple<
@@ -516,6 +569,32 @@ const std::string& URI::getQuery() const
 const std::string& URI::getFragment() const
 {
 	return mFragment;
+}
+
+const std::string& URI::getRawUserInformation(
+	bool includePassword ) const
+{
+	return ( includePassword ) ? mRawUserInformationWithPassword : mRawUserInformation;
+}
+
+const std::string& URI::getRawHost() const
+{
+	return mRawHost;
+}
+
+const std::string& URI::getRawPath() const
+{
+	return mRawPath;
+}
+
+const std::string& URI::getRawQuery() const
+{
+	return mRawQuery;
+}
+
+const std::string& URI::getRawFragment() const
+{
+	return mRawFragment;
 }
 
 URI& URI::operator=(
